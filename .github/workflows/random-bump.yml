@@ -1,0 +1,34 @@
+name: Losowy restart bota co 2–2.5h
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'  # sprawdza co 15 minut
+
+jobs:
+  random-trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wylosuj czas
+        id: los
+        run: |
+          echo "RANDOM_DELAY=$(( (RANDOM % 30) + 121 ))" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
+
+      - name: Odczytaj czas z trigger.txt
+        id: last
+        run: |
+          LAST_TIME=$(cat trigger.txt)
+          echo "LAST=$LAST_TIME" >> $GITHUB_ENV
+          echo "NOW=$(date +%s)" >> $GITHUB_ENV
+
+      - name: Czy powinien zrobić commit?
+        if: ${{ env.NOW - env.LAST > env.RANDOM_DELAY * 60 }}
+        run: |
+          echo "$(date +%s)" > trigger.txt
+          git config user.name "AutoBump"
+          git config user.email "bump@bot.com"
+          git add trigger.txt
+          git commit -m "Losowy trigger"
+          git push
